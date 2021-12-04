@@ -1,13 +1,50 @@
-int main(int argc, char **argv)
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+int lsh_cd(char **args);
+int lsh_help(char **args);
+int lsh_exit(char **args)
+
+#define LSH_RL_BUFSIZE 1024
+char *lsh_read_line(void)
 {
-  // Load config files, if any.
+  int bufsize = LSH_RL_BUFSIZE;
+  int position = 0;
+  char *buffer = malloc(sizeof(char) * bufsize);
+  int c;
 
-  // Run command loop.
-  lsh_loop();
+  if (!buffer) {
+    fprintf(stderr, "lsh: allocation error\n");
+    exit(EXIT_FAILURE);
+  }
 
-  // Perform any shutdown/cleanup.
+  while (1) {
+    // Read a character
+    c = getchar();
 
-  return EXIT_SUCCESS;
+    // If we hit EOF, replace it with a null character and return.
+    if (c == EOF || c == '\n') {
+      buffer[position] = '\0';
+      return buffer;
+    } else {
+      buffer[position] = c;
+    }
+    position++;
+
+    // If we have exceeded the buffer, reallocate.
+    if (position >= bufsize) {
+      bufsize += LSH_RL_BUFSIZE;
+      buffer = realloc(buffer, bufsize);
+      if (!buffer) {
+        fprintf(stderr, "lsh: allocation error\n");
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
 }
 
 void lsh_loop(void)
@@ -26,3 +63,16 @@ void lsh_loop(void)
     free(args);
   } while (status);
 }
+
+int main(int argc, char **argv)
+{
+  // Load config files, if any.
+
+  // Run command loop.
+  lsh_loop();
+
+  // Perform any shutdown/cleanup.
+
+  return EXIT_SUCCESS;
+}
+
